@@ -1,5 +1,5 @@
 -- Utility memory bag by Directsun
--- Version 2.6.0
+-- Version 2.5.1
 -- Fork of Memory Bag 2.0 by MrStump
 
 function updateSave()
@@ -36,11 +36,16 @@ function updateMemoryWithMoves()
         memoryList[guid].pos.x = entry.pos.x - deltaPos.x
         memoryList[guid].pos.y = entry.pos.y - deltaPos.y
         memoryList[guid].pos.z = entry.pos.z - deltaPos.z
-        -- TODO: rotation needs to also update position for a true change
         -- memoryList[guid].rot.x = movedRotation.x
         -- memoryList[guid].rot.y = movedRotation.y
         -- memoryList[guid].rot.z = movedRotation.z
     end
+
+    --theList[obj.getGUID()] = {
+    --    pos={x=round(pos.x,4), y=round(pos.y,4), z=round(pos.z,4)},
+    --    rot={x=round(rot.x,4), y=round(rot.y,4), z=round(rot.z,4)},
+    --    lock=obj.getLock()
+    --}
     moveList = {}
 end
 
@@ -453,18 +458,18 @@ end
 
 --Used to rotate a set of coordinates by an angle
 function rotateLocalCoordinates(desiredPos, obj)
-  local objPos, objRot = obj.getPosition(), obj.getRotation()
+    local objPos, objRot = obj.getPosition(), obj.getRotation()
     local angle = math.rad(objRot.y)
-  local x = desiredPos.x * math.cos(angle) - desiredPos.z * math.sin(angle)
-  local z = desiredPos.x * math.sin(angle) + desiredPos.z * math.cos(angle)
-  --return {x=objPos.x+x, y=objPos.y+desiredPos.y, z=objPos.z+z}
+    local x = desiredPos.x * math.cos(angle) - desiredPos.z * math.sin(angle)
+    local z = desiredPos.x * math.sin(angle) + desiredPos.z * math.cos(angle)
+    --return {x=objPos.x+x, y=objPos.y+desiredPos.y, z=objPos.z+z}
     return {x=x, y=desiredPos.y, z=z}
 end
 
 function rotateMyCoordinates(desiredPos, obj)
-  local angle = math.rad(obj.getRotation().y)
+    local angle = math.rad(obj.getRotation().y)
   local x = desiredPos.x * math.sin(angle)
-  local z = desiredPos.z * math.cos(angle)
+    local z = desiredPos.z * math.cos(angle)
     return {x=x, y=desiredPos.y, z=z}
 end
 
