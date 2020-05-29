@@ -1,5 +1,5 @@
 -- Utility memory bag by Directsun
--- Version 2.5.1
+-- Version 2.5.2
 -- Fork of Memory Bag 2.0 by MrStump
 
 function updateSave()
@@ -66,6 +66,7 @@ function onload(saved_data)
     if next(memoryList) == nil then
         createSetupButton()
     else
+        fresh = false
         createMemoryActionButtons()
     end
 end
