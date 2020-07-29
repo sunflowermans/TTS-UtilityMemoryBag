@@ -120,6 +120,7 @@ end
 
 --Creates selection buttons on objects
 function createButtonsOnAllObjects(move)
+    buttonIndexMap = {}
     local howManyButtons = 0
 
     local objsToHaveButtons = {}
@@ -131,7 +132,6 @@ function createButtonsOnAllObjects(move)
 
     for _, obj in ipairs(objsToHaveButtons) do
         if obj ~= self then
-            local dummyIndex = howManyButtons
             --On a normal bag, the button positions aren't the same size as the bag.
             globalScaleFactor = 1.25 * 1/self.getScale().x
             --Super sweet math to set button positions
@@ -142,12 +142,16 @@ function createButtonsOnAllObjects(move)
             objPos.x = -objPos.x * globalScaleFactor
             objPos.y = objPos.y * globalScaleFactor
             objPos.z = objPos.z * globalScaleFactor
+            --Workaround for custom PDFs
+            if obj.Book then
+                objPos.y = objPos.y + 0.5
+            end
             --Offset rotation of bag
             local rot = self.getRotation()
             rot.y = -rot.y + 180
             --Create function
             local funcName = "selectButton_" .. howManyButtons
-            local func = function() buttonClick_selection(dummyIndex, obj, move) end
+            local func = function() buttonClick_selection(obj, move) end
             local color = {0.75,0.25,0.25,0.6}
             local colorMove = {0,0,1,0.6}
             if move == true then
@@ -159,6 +163,7 @@ function createButtonsOnAllObjects(move)
                 position=objPos, rotation=rot, height=1000, width=1000,
                 color=color,
             })
+            buttonIndexMap[obj.getGUID()] = howManyButtons
             howManyButtons = howManyButtons + 1
         end
     end
@@ -183,6 +188,12 @@ function createSetupActionButtons(move)
           label="Add", click_function="buttonClick_add", function_owner=self,
           position={0,0.3,-3.6}, rotation={0,180,0}, height=350, width=1100,
           font_size=250, color={0,0,0}, font_color={0.25,1,0.25}
+      })
+
+      self.createButton({
+          label="Selection", click_function="editDragSelection", function_owner=self,
+          position={0,0.3,2}, rotation={0,180,0}, height=350, width=1100,
+          font_size=250, color={0,0,0}, font_color={1,1,1}
       })
 
         if fresh == false then
@@ -211,7 +222,8 @@ end
 
 
 --Checks or unchecks buttons
-function buttonClick_selection(index, obj, move)
+function buttonClick_selection(obj, move)
+    local index = buttonIndexMap[obj.getGUID()]
     local colorMove = {0,0,1,0.6}
     local color = {0,1,0,0.6}
 
@@ -246,9 +258,41 @@ function buttonClick_selection(index, obj, move)
       if move == true then
         color = colorMove
       end
-        self.editButton({index=index, color=color})
-        theList[obj.getGUID()] = nil
-        obj.highlightOff()
+      self.editButton({index=index, color=color})
+      theList[obj.getGUID()] = nil
+      obj.highlightOff()
+    end
+end
+
+function editDragSelection(bagObj, player, remove)
+    local selectedObjs = Player[player].getSelectedObjects()
+    if not remove then
+      for _, obj in ipairs(selectedObjs) do
+        local index = buttonIndexMap[obj.getGUID()]
+        --Ignore if already in the memory list, or does not have a button
+        if index and not memoryList[obj.getGUID()] then
+          self.editButton({index=index, color={0,1,0,0.6}})
+          --Adding pos/rot to memory table
+          local pos, rot = obj.getPosition(), obj.getRotation()
+          --I need to add it like this or it won't save due to indexing issue
+          memoryList[obj.getGUID()] = {
+              pos={x=round(pos.x,4), y=round(pos.y,4), z=round(pos.z,4)},
+              rot={x=round(rot.x,4), y=round(rot.y,4), z=round(rot.z,4)},
+              lock=obj.getLock()
+          }
+          obj.highlightOn({0,1,0})
+        end
+      end
+    else
+      for _, obj in ipairs(selectedObjs) do
+        local index = buttonIndexMap[obj.getGUID()]
+        if index and memoryList[obj.getGUID()] then
+          color = {0.75,0.25,0.25,0.6}
+          self.editButton({index=index, color=color})
+          memoryList[obj.getGUID()] = nil
+          obj.highlightOff()
+        end
+      end
     end
 end
 
@@ -459,18 +503,18 @@ end
 
 --Used to rotate a set of coordinates by an angle
 function rotateLocalCoordinates(desiredPos, obj)
-    local objPos, objRot = obj.getPosition(), obj.getRotation()
+	local objPos, objRot = obj.getPosition(), obj.getRotation()
     local angle = math.rad(objRot.y)
-    local x = desiredPos.x * math.cos(angle) - desiredPos.z * math.sin(angle)
-    local z = desiredPos.x * math.sin(angle) + desiredPos.z * math.cos(angle)
-    --return {x=objPos.x+x, y=objPos.y+desiredPos.y, z=objPos.z+z}
+	local x = desiredPos.x * math.cos(angle) - desiredPos.z * math.sin(angle)
+	local z = desiredPos.x * math.sin(angle) + desiredPos.z * math.cos(angle)
+	--return {x=objPos.x+x, y=objPos.y+desiredPos.y, z=objPos.z+z}
     return {x=x, y=desiredPos.y, z=z}
 end
 
 function rotateMyCoordinates(desiredPos, obj)
-    local angle = math.rad(obj.getRotation().y)
+	local angle = math.rad(obj.getRotation().y)
   local x = desiredPos.x * math.sin(angle)
-    local z = desiredPos.z * math.cos(angle)
+	local z = desiredPos.z * math.cos(angle)
     return {x=x, y=desiredPos.y, z=z}
 end
 
