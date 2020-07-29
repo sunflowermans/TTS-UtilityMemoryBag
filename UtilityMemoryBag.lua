@@ -522,26 +522,26 @@ end
 function wait(time)
     local start = os.time()
     repeat coroutine.yield(0) until os.time() > start + time
-    end
+end
 
-    --Duplicates a table (needed to prevent it making reference to the same objects)
-    function duplicateTable(oldTable)
-        local newTable = {}
-        for k, v in pairs(oldTable) do
-            newTable[k] = v
-        end
-        return newTable
+--Duplicates a table (needed to prevent it making reference to the same objects)
+function duplicateTable(oldTable)
+    local newTable = {}
+    for k, v in pairs(oldTable) do
+        newTable[k] = v
     end
+    return newTable
+end
 
-    --Moves scripted highlight from all objects
-    function removeAllHighlights()
-        for _, obj in ipairs(getAllObjects()) do
-            obj.highlightOff()
-        end
+--Moves scripted highlight from all objects
+function removeAllHighlights()
+    for _, obj in ipairs(getAllObjects()) do
+        obj.highlightOff()
     end
+end
 
-    --Round number (num) to the Nth decimal (dec)
-    function round(num, dec)
-        local mult = 10^(dec or 0)
-        return math.floor(num * mult + 0.5) / mult
-    end
+--Round number (num) to the Nth decimal (dec)
+function round(num, dec)
+    local mult = 10^(dec or 0)
+    return math.floor(num * mult + 0.5) / mult
+end
