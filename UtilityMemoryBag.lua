@@ -9,17 +9,17 @@ function updateSave()
 end
 
 function combineMemoryFromBagsWithin()
-  local bagObjList = self.getObjects()
-  for _, bagObj in ipairs(bagObjList) do
-    local data = bagObj.lua_script_state
-      if data ~= nil then
-        local j = JSON.decode(data)
-        if j ~= nil and j.ml ~= nil then
-          for guid, entry in pairs(j.ml) do
-            memoryList[guid] = entry
-          end
+    local bagObjList = self.getObjects()
+    for _, bagObj in ipairs(bagObjList) do
+        local data = bagObj.lua_script_state
+        if data ~= nil then
+            local j = JSON.decode(data)
+            if j ~= nil and j.ml ~= nil then
+                for guid, entry in pairs(j.ml) do
+                    memoryList[guid] = entry
+                end
+            end
         end
-      end
     end
 end
 
@@ -106,16 +106,16 @@ function buttonClick_setup()
 end
 
 function getAllObjectsInMemory()
-  local objTable = {}
-  local curObj = {}
+    local objTable = {}
+    local curObj = {}
 
-  for guid in pairs(memoryListBackup) do
-    curObj = getObjectFromGUID(guid)
-    table.insert(objTable, curObj)
-  end
+    for guid in pairs(memoryListBackup) do
+        curObj = getObjectFromGUID(guid)
+        table.insert(objTable, curObj)
+    end
 
-  return objTable
-  -- return getAllObjects()
+    return objTable
+    -- return getAllObjects()
 end
 
 --Creates selection buttons on objects
@@ -125,9 +125,9 @@ function createButtonsOnAllObjects(move)
 
     local objsToHaveButtons = {}
     if move == true then
-      objsToHaveButtons = getAllObjectsInMemory()
+        objsToHaveButtons = getAllObjectsInMemory()
     else
-      objsToHaveButtons = getAllObjects()
+        objsToHaveButtons = getAllObjects()
     end
 
     for _, obj in ipairs(objsToHaveButtons) do
@@ -155,7 +155,7 @@ function createButtonsOnAllObjects(move)
             local color = {0.75,0.25,0.25,0.6}
             local colorMove = {0,0,1,0.6}
             if move == true then
-              color = colorMove
+                color = colorMove
             end
             self.setVar(funcName, func)
             self.createButton({
@@ -184,17 +184,17 @@ function createSetupActionButtons(move)
     })
 
     if move == false then
-      self.createButton({
-          label="Add", click_function="buttonClick_add", function_owner=self,
-          position={0,0.3,-3.6}, rotation={0,180,0}, height=350, width=1100,
-          font_size=250, color={0,0,0}, font_color={0.25,1,0.25}
-      })
+        self.createButton({
+            label="Add", click_function="buttonClick_add", function_owner=self,
+            position={0,0.3,-3.6}, rotation={0,180,0}, height=350, width=1100,
+            font_size=250, color={0,0,0}, font_color={0.25,1,0.25}
+        })
 
-      self.createButton({
-          label="Selection", click_function="editDragSelection", function_owner=self,
-          position={0,0.3,2}, rotation={0,180,0}, height=350, width=1100,
-          font_size=250, color={0,0,0}, font_color={1,1,1}
-      })
+        self.createButton({
+            label="Selection", click_function="editDragSelection", function_owner=self,
+            position={0,0.3,2}, rotation={0,180,0}, height=350, width=1100,
+            font_size=250, color={0,0,0}, font_color={1,1,1}
+        })
 
         if fresh == false then
             self.createButton({
@@ -232,14 +232,14 @@ function buttonClick_selection(obj, move)
 
     theList = memoryList
     if move == true then
-       theList = moveList
-       if previousGuid ~= nil and previousGuid ~= selectedGuid then
-         local prevObj = getObjectFromGUID(previousGuid)
-         prevObj.highlightOff()
-         self.editButton({index=previousIndex, color=colorMove})
-         theList[previousGuid] = nil
-       end
-       previousIndex = index
+        theList = moveList
+        if previousGuid ~= nil and previousGuid ~= selectedGuid then
+            local prevObj = getObjectFromGUID(previousGuid)
+            prevObj.highlightOff()
+            self.editButton({index=previousIndex, color=colorMove})
+            theList[previousGuid] = nil
+        end
+        previousIndex = index
     end
 
     if theList[selectedGuid] == nil then
@@ -254,45 +254,45 @@ function buttonClick_selection(obj, move)
         }
         obj.highlightOn({0,1,0})
     else
-      color = {0.75,0.25,0.25,0.6}
-      if move == true then
-        color = colorMove
-      end
-      self.editButton({index=index, color=color})
-      theList[obj.getGUID()] = nil
-      obj.highlightOff()
+        color = {0.75,0.25,0.25,0.6}
+        if move == true then
+            color = colorMove
+        end
+        self.editButton({index=index, color=color})
+        theList[obj.getGUID()] = nil
+        obj.highlightOff()
     end
 end
 
 function editDragSelection(bagObj, player, remove)
     local selectedObjs = Player[player].getSelectedObjects()
     if not remove then
-      for _, obj in ipairs(selectedObjs) do
-        local index = buttonIndexMap[obj.getGUID()]
-        --Ignore if already in the memory list, or does not have a button
-        if index and not memoryList[obj.getGUID()] then
-          self.editButton({index=index, color={0,1,0,0.6}})
-          --Adding pos/rot to memory table
-          local pos, rot = obj.getPosition(), obj.getRotation()
-          --I need to add it like this or it won't save due to indexing issue
-          memoryList[obj.getGUID()] = {
-              pos={x=round(pos.x,4), y=round(pos.y,4), z=round(pos.z,4)},
-              rot={x=round(rot.x,4), y=round(rot.y,4), z=round(rot.z,4)},
-              lock=obj.getLock()
-          }
-          obj.highlightOn({0,1,0})
+        for _, obj in ipairs(selectedObjs) do
+            local index = buttonIndexMap[obj.getGUID()]
+            --Ignore if already in the memory list, or does not have a button
+            if index and not memoryList[obj.getGUID()] then
+                self.editButton({index=index, color={0,1,0,0.6}})
+                --Adding pos/rot to memory table
+                local pos, rot = obj.getPosition(), obj.getRotation()
+                --I need to add it like this or it won't save due to indexing issue
+                memoryList[obj.getGUID()] = {
+                    pos={x=round(pos.x,4), y=round(pos.y,4), z=round(pos.z,4)},
+                    rot={x=round(rot.x,4), y=round(rot.y,4), z=round(rot.z,4)},
+                    lock=obj.getLock()
+                }
+                obj.highlightOn({0,1,0})
+            end
         end
-      end
     else
-      for _, obj in ipairs(selectedObjs) do
-        local index = buttonIndexMap[obj.getGUID()]
-        if index and memoryList[obj.getGUID()] then
-          color = {0.75,0.25,0.25,0.6}
-          self.editButton({index=index, color=color})
-          memoryList[obj.getGUID()] = nil
-          obj.highlightOff()
+        for _, obj in ipairs(selectedObjs) do
+            local index = buttonIndexMap[obj.getGUID()]
+            if index and memoryList[obj.getGUID()] then
+                color = {0.75,0.25,0.25,0.6}
+                self.editButton({index=index, color=color})
+                memoryList[obj.getGUID()] = nil
+                obj.highlightOff()
+            end
         end
-      end
     end
 end
 
@@ -336,8 +336,8 @@ function buttonClick_submit()
             buttonClick_place()
         end
     elseif next(memoryList) == nil and moveGuid == nil then
-      memoryList = memoryListBackup
-      broadcastToAll("No selections made.", {0.75, 0.25, 0.25})
+        memoryList = memoryListBackup
+        broadcastToAll("No selections made.", {0.75, 0.25, 0.25})
     end
     combineMemoryFromBagsWithin()
     self.clearButtons()
@@ -354,7 +354,7 @@ function buttonClick_submit()
 end
 
 function combineTables(first_table, second_table)
-  for k,v in pairs(second_table) do first_table[k] = v end
+    for k,v in pairs(second_table) do first_table[k] = v end
 end
 
 function buttonClick_add()
@@ -375,19 +375,19 @@ function buttonClick_add()
 end
 
 function buttonClick_remove()
-        broadcastToAll("Removing Selected Entries From Memory", {1.0, 0.25, 0.25})
-        self.clearButtons()
-        createMemoryActionButtons()
-        local count = 0
-        for guid in pairs(memoryList) do
-            count = count + 1
-            memoryListBackup[guid] = nil
-            local obj = getObjectFromGUID(guid)
-            if obj ~= nil then obj.highlightOff() end
-        end
-        broadcastToAll(count.." Objects Removed", {1,1,1})
-        memoryList = memoryListBackup
-        updateSave()
+    broadcastToAll("Removing Selected Entries From Memory", {1.0, 0.25, 0.25})
+    self.clearButtons()
+    createMemoryActionButtons()
+    local count = 0
+    for guid in pairs(memoryList) do
+        count = count + 1
+        memoryListBackup[guid] = nil
+        local obj = getObjectFromGUID(guid)
+        if obj ~= nil then obj.highlightOff() end
+    end
+    broadcastToAll(count.." Objects Removed", {1,1,1})
+    memoryList = memoryListBackup
+    updateSave()
 end
 
 function buttonClick_setNew()
@@ -442,9 +442,9 @@ function createMemoryActionButtons()
         font_size=250, color={0,0,0}, font_color={1,1,1}
     })
     self.createButton({
-      label="Move", click_function="buttonClick_transpose", function_owner=self,
-      position={-2.8,0.3,0}, rotation={0,270,0}, height=350, width=800,
-      font_size=250, color={0,0,0}, font_color={0.75,0.75,1}
+        label="Move", click_function="buttonClick_transpose", function_owner=self,
+        position={-2.8,0.3,0}, rotation={0,270,0}, height=350, width=800,
+        font_size=250, color={0,0,0}, font_color={0.75,0.75,1}
     })
 end
 
@@ -503,18 +503,18 @@ end
 
 --Used to rotate a set of coordinates by an angle
 function rotateLocalCoordinates(desiredPos, obj)
-	local objPos, objRot = obj.getPosition(), obj.getRotation()
+    local objPos, objRot = obj.getPosition(), obj.getRotation()
     local angle = math.rad(objRot.y)
-	local x = desiredPos.x * math.cos(angle) - desiredPos.z * math.sin(angle)
-	local z = desiredPos.x * math.sin(angle) + desiredPos.z * math.cos(angle)
-	--return {x=objPos.x+x, y=objPos.y+desiredPos.y, z=objPos.z+z}
+    local x = desiredPos.x * math.cos(angle) - desiredPos.z * math.sin(angle)
+    local z = desiredPos.x * math.sin(angle) + desiredPos.z * math.cos(angle)
+    --return {x=objPos.x+x, y=objPos.y+desiredPos.y, z=objPos.z+z}
     return {x=x, y=desiredPos.y, z=z}
 end
 
 function rotateMyCoordinates(desiredPos, obj)
-	local angle = math.rad(obj.getRotation().y)
-  local x = desiredPos.x * math.sin(angle)
-	local z = desiredPos.z * math.cos(angle)
+    local angle = math.rad(obj.getRotation().y)
+    local x = desiredPos.x * math.sin(angle)
+    local z = desiredPos.z * math.cos(angle)
     return {x=x, y=desiredPos.y, z=z}
 end
 
@@ -522,26 +522,26 @@ end
 function wait(time)
     local start = os.time()
     repeat coroutine.yield(0) until os.time() > start + time
-end
-
---Duplicates a table (needed to prevent it making reference to the same objects)
-function duplicateTable(oldTable)
-    local newTable = {}
-    for k, v in pairs(oldTable) do
-        newTable[k] = v
     end
-    return newTable
-end
 
---Moves scripted highlight from all objects
-function removeAllHighlights()
-    for _, obj in ipairs(getAllObjects()) do
-        obj.highlightOff()
+    --Duplicates a table (needed to prevent it making reference to the same objects)
+    function duplicateTable(oldTable)
+        local newTable = {}
+        for k, v in pairs(oldTable) do
+            newTable[k] = v
+        end
+        return newTable
     end
-end
 
---Round number (num) to the Nth decimal (dec)
-function round(num, dec)
-  local mult = 10^(dec or 0)
-  return math.floor(num * mult + 0.5) / mult
-end
+    --Moves scripted highlight from all objects
+    function removeAllHighlights()
+        for _, obj in ipairs(getAllObjects()) do
+            obj.highlightOff()
+        end
+    end
+
+    --Round number (num) to the Nth decimal (dec)
+    function round(num, dec)
+        local mult = 10^(dec or 0)
+        return math.floor(num * mult + 0.5) / mult
+    end
