@@ -1,5 +1,5 @@
 -- Utility memory bag by Directsun
--- Version 2.5.2
+-- Version 2.6.0
 -- Fork of Memory Bag 2.0 by MrStump
 
 function updateSave()
