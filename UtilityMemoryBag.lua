@@ -250,7 +250,8 @@ function buttonClick_selection(obj, move)
         theList[obj.getGUID()] = {
             pos={x=round(pos.x,4), y=round(pos.y,4), z=round(pos.z,4)},
             rot={x=round(rot.x,4), y=round(rot.y,4), z=round(rot.z,4)},
-            lock=obj.getLock()
+            lock=obj.getLock(),
+            tint=obj.getColorTint()
         }
         obj.highlightOn({0,1,0})
     else
@@ -278,7 +279,8 @@ function editDragSelection(bagObj, player, remove)
                 memoryList[obj.getGUID()] = {
                     pos={x=round(pos.x,4), y=round(pos.y,4), z=round(pos.z,4)},
                     rot={x=round(rot.x,4), y=round(rot.y,4), z=round(rot.z,4)},
-                    lock=obj.getLock()
+                    lock=obj.getLock(),
+                    tint=obj.getColorTint()
                 }
                 obj.highlightOn({0,1,0})
             end
@@ -402,6 +404,7 @@ function buttonClick_setNew()
             memoryListBackup[guid].pos = obj.getPosition()
             memoryListBackup[guid].rot = obj.getRotation()
             memoryListBackup[guid].lock = obj.getLock()
+            memoryListBackup[guid].tint = obj.getColorTint()
         end
     end
     broadcastToAll(count.." Objects Saved", {1,1,1})
@@ -458,6 +461,7 @@ function buttonClick_place()
             obj.setPositionSmooth(entry.pos)
             obj.setRotationSmooth(entry.rot)
             obj.setLock(entry.lock)
+            obj.setColorTint(entry.tint)
         else
             --If obj is inside of the bag
             for _, bagObj in ipairs(bagObjList) do
@@ -466,6 +470,7 @@ function buttonClick_place()
                         guid=guid, position=entry.pos, rotation=entry.rot, smooth=false
                     })
                     item.setLock(entry.lock)
+                    item.setColorTint(entry.tint)
                     break
                 end
             end
