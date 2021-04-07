@@ -1,6 +1,126 @@
 -- Utility memory bag by Directsun
--- Version 2.6.0
+-- Version 2.7.0
 -- Fork of Memory Bag 2.0 by MrStump
+
+CONFIG = {
+    MEMORY_GROUP = {
+        -- Use an identical value across bags in the group.
+        -- Set this to 'nil' in order to not have the bag in a group.
+        NAME = nil,
+
+        -- This determines how many frames to wait before actually placing objects onto the table when the "Place" button is clicked.
+        -- This gives the other bags time to recall their objects.
+        -- The delay ONLY occurs if other bags have objects out.
+        FRAME_DELAY_BEFORE_PLACING_OBJECTS = 30,
+    },
+}
+
+
+--[[ Memory Bag Groups ]]-------------------------------------------------------
+
+-- Click the "Recall" button on all other bags in my memory group.
+function recallOtherBagsInMyGroup()
+    for bagGuid,_ in pairs(GlobalMemoryGroups:getGroup(CONFIG.MEMORY_GROUP.NAME)) do
+        if bagGuid ~= self.getGUID() then
+            bag = getObjectFromGUID(bagGuid)
+            bag.call('buttonClick_recall')
+        end
+    end
+end
+
+-- Return "true" if another bag in my memory group has any objects out on the table.
+function anyOtherBagsInMyGroupArePlaced()
+    for bagGuid,_ in pairs(GlobalMemoryGroups:getGroup(CONFIG.MEMORY_GROUP.NAME)) do
+        if bagGuid ~= self.getGUID() then
+            local bag = getObjectFromGUID(bagGuid)
+            local state = bag.call('areAnyOfMyObjectsPlaced')
+            if state then return true end
+        end
+    end
+
+    return false
+end
+
+-- Return "true" if at least one object from this memory bag is out on the table.
+function areAnyOfMyObjectsPlaced()
+    for guid,_ in pairs(memoryList) do
+        local obj = getObjectFromGUID(guid)
+        if obj ~= nil then
+            return true
+        end
+    end
+    return false
+end
+
+
+--[[
+This object provides access to a variable stored on the "Global script".
+The variable holds the names & guids of all memory bag groups.
+
+The global variable is a table and holds data like this:
+{
+    'My First Group Name' = {
+        '805ebd' = {},
+        '35cc21' = {},
+        'fc8886' = {},
+    },
+    'My Second Group Name' = {
+        'f50264' = {},
+        '5f5f63' = {},
+    },
+}
+--]]
+GlobalMemoryGroups = {
+    NAME_OF_GLOBAL_VARIABLE = '_GlobalUtilityMemoryBagGroups',
+}
+
+-- Call me inside this script's "onLoad()" method!
+function GlobalMemoryGroups:onLoad(myGuid)
+    -- Create and initialize the global variable if it doesn't already exist:
+    if self:_getGroups() == nil then
+        self:_setGroups({})
+    end
+
+    if CONFIG.MEMORY_GROUP.NAME ~= nil then
+        self:registerBagInGroup(CONFIG.MEMORY_GROUP.NAME, myGuid)
+    end
+end
+
+-- Return the GUIDs of all bags in the "groupName". The return value is a dictionary that maps [GUID -> empty table].
+function GlobalMemoryGroups:getGroup(groupName)
+    guids = self:_getGroups()[groupName] or {}
+    return guids
+end
+
+-- Registers a bag in a memory group. Creates a new group if one doesn't exist.
+function GlobalMemoryGroups:registerBagInGroup(groupName, bagGuid)
+    self:_tryCreateNewGroup(groupName)
+    local groups = self:_getGroups()
+    groups[groupName][bagGuid] = {}
+    self:_setGroups(groups)
+end
+
+-- Return the global variable, which is a table holding all memory group names & guids.
+function GlobalMemoryGroups:_getGroups()
+    return Global.getTable(self.NAME_OF_GLOBAL_VARIABLE)
+end
+
+-- Override the global variable (i.e. the entire table).
+function GlobalMemoryGroups:_setGroups(newTable)
+    Global.setTable(self.NAME_OF_GLOBAL_VARIABLE, newTable)
+end
+
+-- Add a new memory group named "groupName" to the global variable, if one doesn't already exist.
+function GlobalMemoryGroups:_tryCreateNewGroup(groupName)
+    local groups = self:_getGroups()
+    if groups[groupName] == nil then
+        groups[groupName] = {}
+        self:_setGroups(groups)
+    end
+end
+
+--//////////////////////////////////////////////////////////////////////////////
+
 
 function updateSave()
     local data_to_save = {["ml"]=memoryList}
@@ -69,6 +189,8 @@ function onload(saved_data)
         fresh = false
         createMemoryActionButtons()
     end
+
+    GlobalMemoryGroups:onLoad(self.getGUID())
 end
 
 
@@ -453,6 +575,15 @@ end
 
 --Sends objects from bag/table to their saved position/rotation
 function buttonClick_place()
+    if anyOtherBagsInMyGroupArePlaced() then
+        recallOtherBagsInMyGroup()
+        Wait.frames(_placeObjects, CONFIG.MEMORY_GROUP.FRAME_DELAY_BEFORE_PLACING_OBJECTS)
+    else
+        _placeObjects()
+    end
+end
+
+function _placeObjects()
     local bagObjList = self.getObjects()
     for guid, entry in pairs(memoryList) do
         local obj = getObjectFromGUID(guid)

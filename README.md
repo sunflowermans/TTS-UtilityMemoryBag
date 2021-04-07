@@ -7,5 +7,6 @@ Fork of [Memory Bag 2.0](https://steamcommunity.com/sharedfiles/filedetails/?id=
 * Move relative to one object
 * Set New based on table position
 * Dragable selection setup and add (thanks cowgoesmoo33)
+* Groups where only one can be placed at a time (thanks Quickle)
 
 Want to contribute? Create an issue or fork the code on GitHub and submit a pull request.
