@@ -191,6 +191,7 @@ function onload(saved_data)
     end
 
     GlobalMemoryGroups:onLoad(self.getGUID())
+    AllMemoryBagsInScene:add(self.getGUID())
 end
 
 
@@ -680,4 +681,26 @@ end
 function round(num, dec)
     local mult = 10^(dec or 0)
     return math.floor(num * mult + 0.5) / mult
+end
+
+
+--[[
+This object provides access to a variable stored on the "Global script".
+The variable holds the GUIDs for every Utility Memory Bag in the scene.
+
+Example:
+{'805ebd', '35cc21', 'fc8886', 'f50264', '5f5f63'}
+--]]
+AllMemoryBagsInScene = {
+    NAME_OF_GLOBAL_VARIABLE = "_UtilityMemoryBag_AllMemoryBagsInScene"
+}
+
+function AllMemoryBagsInScene:add(guid)
+    local guids = Global.getTable(self.NAME_OF_GLOBAL_VARIABLE) or {}
+    table.insert(guids, guid)
+    Global.setTable(self.NAME_OF_GLOBAL_VARIABLE, guids)
+end
+
+function AllMemoryBagsInScene:getGuidList()
+    return Global.getTable(self.NAME_OF_GLOBAL_VARIABLE) or {}
 end
