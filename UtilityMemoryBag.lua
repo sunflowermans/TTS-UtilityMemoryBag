@@ -42,25 +42,18 @@ function memoryGroupName:set(newName)
     end
 end
 
-
 -- Click the "Recall" button on all other bags in my memory group.
 function recallOtherBagsInMyGroup()
-    for bagGuid,_ in pairs(GlobalMemoryGroups:getGroup(memoryGroupName:get())) do
-        if bagGuid ~= self.getGUID() then
-            bag = getObjectFromGUID(bagGuid)
-            bag.call('buttonClick_recall')
-        end
+    for _,bag in ipairs(getOtherBagsInMyGroup()) do
+        bag.call('buttonClick_recall')
     end
 end
 
 -- Return "true" if another bag in my memory group has any objects out on the table.
 function anyOtherBagsInMyGroupArePlaced()
-    for bagGuid,_ in pairs(GlobalMemoryGroups:getGroup(memoryGroupName:get())) do
-        if bagGuid ~= self.getGUID() then
-            local bag = getObjectFromGUID(bagGuid)
-            local state = bag.call('areAnyOfMyObjectsPlaced')
-            if state then return true end
-        end
+    for _,bag in ipairs(getOtherBagsInMyGroup()) do
+        local state = bag.call('areAnyOfMyObjectsPlaced')
+        if state then return true end
     end
 
     return false
@@ -75,6 +68,20 @@ function areAnyOfMyObjectsPlaced()
         end
     end
     return false
+end
+
+function getOtherBagsInMyGroup()
+    local bags = {}
+    for bagGuid,_ in pairs(GlobalMemoryGroups:getGroup(memoryGroupName:get())) do
+        if bagGuid ~= self.getGUID() then
+            bag = getObjectFromGUID(bagGuid)
+            -- "bag" is nill if it has been deleted since the last time onLoad() was called.
+            if bag ~= nil then
+                table.insert(bags, bag)
+            end
+        end
+    end
+    return bags
 end
 
 
