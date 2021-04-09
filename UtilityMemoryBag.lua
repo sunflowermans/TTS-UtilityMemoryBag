@@ -17,9 +17,9 @@ CONFIG = {
 
 --[[ Memory Bag Groups ]]-------------------------------------------------------
 --[[
-Utility Memory Bags may be added to a named group, called the "memory group".
+Utility Memory Bags may be added to a named group, called a "memory group".
 
-You can add a bag to a group through the bag's UI: "Setup" > "Group Name" (to left of the bag).
+You can add a bag to a group through the bag's UI: "Setup" > "Group Name" (to the left of the bag).
 
 Only one bag from a group may have it's contents placed on the table at a time.
 When "Place" is clicked on a bag, the other bags in it's memory group are recalled.
@@ -158,7 +158,6 @@ end
 -- This object controls the "Group Name" input text field that is part of the bag's ingame UI.
 groupNameInput = {
     greyedOutText = "Group Name",
-    -- widthPerCharacter = 133.33333,
     widthPerCharacter = 100,
     padding = 4,
     memoryBag=self,
