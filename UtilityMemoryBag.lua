@@ -1,9 +1,233 @@
 -- Utility memory bag by Directsun
--- Version 2.6.0
+-- Version 2.7.0
 -- Fork of Memory Bag 2.0 by MrStump
+--
+-- Want to contribute? Create an issue or fork the code on GitHub and submit a pull request:
+-- https://github.com/sunflowermans/TTS-UtilityMemoryBag
+
+CONFIG = {
+    MEMORY_GROUP = {
+        -- This determines how many frames to wait before actually placing objects onto the table when the "Place" button is clicked.
+        -- This gives the other bags time to recall their objects.
+        -- The delay ONLY occurs if other bags have objects out.
+        FRAME_DELAY_BEFORE_PLACING_OBJECTS = 30,
+    },
+}
+
+
+--[[ Memory Bag Groups ]]-------------------------------------------------------
+--[[
+Utility Memory Bags may be added to a named group, called a "memory group".
+
+You can add a bag to a group through the bag's UI: "Setup" > "Group Name" (to the left of the bag).
+
+Only one bag from a group may have it's contents placed on the table at a time.
+When "Place" is clicked on a bag, the other bags in it's memory group are recalled.
+
+By default a memory bag is not in any group. It's memory group is "nil".
+--]]
+
+memoryGroupName = {memoryBag=self}
+function memoryGroupName:get()
+    return self._name
+end
+function memoryGroupName:set(newName)
+    GlobalMemoryGroups:unregisterBagInGroup(self:get(), self.memoryBag.getGUID())
+    GlobalMemoryGroups:registerBagInGroup(newName, self.memoryBag.getGUID())
+
+    if newName == "" then
+        self._name = nil
+    else
+        self._name = newName
+    end
+end
+
+-- Click the "Recall" button on all other bags in my memory group.
+function recallOtherBagsInMyGroup()
+    for _,bag in ipairs(getOtherBagsInMyGroup()) do
+        bag.call('buttonClick_recall')
+    end
+end
+
+-- Return "true" if another bag in my memory group has any objects out on the table.
+function anyOtherBagsInMyGroupArePlaced()
+    for _,bag in ipairs(getOtherBagsInMyGroup()) do
+        local state = bag.call('areAnyOfMyObjectsPlaced')
+        if state then return true end
+    end
+
+    return false
+end
+
+-- Return "true" if at least one object from this memory bag is out on the table.
+function areAnyOfMyObjectsPlaced()
+    for guid,_ in pairs(memoryList) do
+        local obj = getObjectFromGUID(guid)
+        if obj ~= nil then
+            return true
+        end
+    end
+    return false
+end
+
+function getOtherBagsInMyGroup()
+    local bags = {}
+    for bagGuid,_ in pairs(GlobalMemoryGroups:getGroup(memoryGroupName:get())) do
+        if bagGuid ~= self.getGUID() then
+            bag = getObjectFromGUID(bagGuid)
+            -- "bag" is nill if it has been deleted since the last time onLoad() was called.
+            if bag ~= nil then
+                table.insert(bags, bag)
+            end
+        end
+    end
+    return bags
+end
+
+
+--[[
+This object provides access to a variable stored on the "Global script".
+The variable holds the names & guids of all memory bag groups.
+
+The global variable is a table and holds data like this:
+{
+    'My First Group Name' = {
+        '805ebd' = {},
+        '35cc21' = {},
+        'fc8886' = {},
+    },
+    'My Second Group Name' = {
+        'f50264' = {},
+        '5f5f63' = {},
+    },
+}
+--]]
+GlobalMemoryGroups = {
+    NAME_OF_GLOBAL_VARIABLE = '_GlobalUtilityMemoryBagGroups',
+}
+
+-- Call me inside this script's "onLoad()" method!
+function GlobalMemoryGroups:onLoad(myGuid)
+    -- Create and initialize the global variable if it doesn't already exist:
+    if self:_getGroups() == nil then
+        self:_setGroups({})
+    end
+end
+
+-- Return the GUIDs of all bags in the "groupName". The return value is a dictionary that maps [GUID -> empty table].
+function GlobalMemoryGroups:getGroup(groupName)
+    guids = self:_getGroups()[groupName] or {}
+    return guids
+end
+
+-- Registers a bag in a memory group. Creates a new group if one doesn't exist.
+function GlobalMemoryGroups:registerBagInGroup(groupName, bagGuid)
+    if groupName == nil or groupName == "" then
+        return
+    end
+
+    self:_tryCreateNewGroup(groupName)
+    local groups = self:_getGroups()
+    groups[groupName][bagGuid] = {}
+    self:_setGroups(groups)
+end
+
+-- Removes this bag from the memory group.
+function GlobalMemoryGroups:unregisterBagInGroup(groupName, bagGuid)
+    local groups = self:_getGroups()
+    local group = groups[groupName]
+    if group ~= nil then
+        group[bagGuid] = nil
+        self:_setGroups(groups)
+    end
+end
+
+-- Return the global variable, which is a table holding all memory group names & guids.
+function GlobalMemoryGroups:_getGroups()
+    return Global.getTable(self.NAME_OF_GLOBAL_VARIABLE)
+end
+
+-- Override the global variable (i.e. the entire table).
+function GlobalMemoryGroups:_setGroups(newTable)
+    Global.setTable(self.NAME_OF_GLOBAL_VARIABLE, newTable)
+end
+
+-- Add a new memory group named "groupName" to the global variable, if one doesn't already exist.
+function GlobalMemoryGroups:_tryCreateNewGroup(groupName)
+    local groups = self:_getGroups()
+    if groups[groupName] == nil then
+        groups[groupName] = {}
+        self:_setGroups(groups)
+    end
+end
+
+
+-- This object controls the "Group Name" input text field that is part of the bag's ingame UI.
+groupNameInput = {
+    greyedOutText = "Group Name",
+    widthPerCharacter = 100,
+    padding = 4,
+    memoryBag=self,
+}
+function groupNameInput:create(optionalStartingValue)
+    local effectiveText = optionalStartingValue or self.greyedOutText
+    local width = self:computeWidth(effectiveText)
+
+    self.memoryBag.createInput({
+        label=self.greyedOutText,
+        value=optionalStartingValue or nil,
+        alignment=3, -- Center aligned
+        input_function="groupNameInput_onCharacterTyped", function_owner=self.memoryBag,
+        position={2.1,0.3,0}, rotation={0,270,0}, width=width, height=350,
+        font_size=250, color={0,0,0}, font_color={1,1,1},
+    })
+end
+function groupNameInput:computeWidth(text)
+    return (string.len(text) + self.padding) * self.widthPerCharacter
+end
+function groupNameInput:updatedWidth(text)
+    self.memoryBag.editInput({
+        index=0,
+        width=self:computeWidth(text)
+    })
+end
+function groupNameInput:onCharacterTyped(text, stillEditing)
+    if stillEditing then
+        self:updatedWidth(text)
+    else
+        if text == "" then
+            self:updatedWidth(self.greyedOutText)
+        end
+    end
+end
+function groupNameInput_onCharacterTyped(memoryBag, playerColor, text, stillEditing)
+    groupNameInput:onCharacterTyped(text, stillEditing)
+end
+function groupNameInput:setGroupNameToInputField()
+    local inputFields = self.memoryBag.getInputs()
+    if inputFields ~= nil then
+        -- Get input field 0, which corresponds to the groupNameInput.
+        -- Unfortunately "self.getInputs()" doesn't return the inputs in a guaranteed order.
+        local nameField = nil
+        for _,field in ipairs(inputFields) do
+            if field.index == 0 then
+                nameField = field
+            end
+        end
+
+        memoryGroupName:set(nameField.value)
+    end
+end
+
+
+
+
+
+--//////////////////////////////////////////////////////////////////////////////
+
 
 function updateSave()
-    local data_to_save = {["ml"]=memoryList}
+    local data_to_save = {["ml"]=memoryList,["groupName"]=memoryGroupName:get()}
     saved_data = JSON.encode(data_to_save)
     self.script_state = saved_data
 end
@@ -50,14 +274,19 @@ function updateMemoryWithMoves()
 end
 
 function onload(saved_data)
+    GlobalMemoryGroups:onLoad(self.getGUID())
+    AllMemoryBagsInScene:add(self.getGUID())
+
     fresh = true
     if saved_data ~= "" then
         local loaded_data = JSON.decode(saved_data)
         --Set up information off of loaded_data
         memoryList = loaded_data.ml
+        memoryGroupName:set(loaded_data.groupName)
     else
         --Set up information for if there is no saved saved data
         memoryList = {}
+        memoryGroupName:set(nil)
     end
 
     moveList = {}
@@ -92,6 +321,7 @@ function buttonClick_transpose()
     memoryList = {}
     moveList = {}
     self.clearButtons()
+    self.clearInputs()
     createButtonsOnAllObjects(true)
     createSetupActionButtons(true)
 end
@@ -101,6 +331,7 @@ function buttonClick_setup()
     memoryListBackup = duplicateTable(memoryList)
     memoryList = {}
     self.clearButtons()
+    self.clearInputs()
     createButtonsOnAllObjects(false)
     createSetupActionButtons(false)
 end
@@ -195,6 +426,7 @@ function createSetupActionButtons(move)
             position={0,0.3,2}, rotation={0,180,0}, height=350, width=1100,
             font_size=250, color={0,0,0}, font_color={1,1,1}
         })
+        groupNameInput:create(memoryGroupName:get())
 
         if fresh == false then
             self.createButton({
@@ -303,6 +535,7 @@ function buttonClick_cancel()
     memoryList = memoryListBackup
     moveList = {}
     self.clearButtons()
+    self.clearInputs()
     if next(memoryList) == nil then
         createSetupButton()
     else
@@ -325,6 +558,7 @@ function buttonClick_submit()
         else
             broadcastToAll("Moving all items in memory relative to new objects position!", {0.75, 0.75, 1})
             self.clearButtons()
+            self.clearInputs()
             createMemoryActionButtons()
             local count = 0
             for guid in pairs(moveList) do
@@ -342,7 +576,9 @@ function buttonClick_submit()
         broadcastToAll("No selections made.", {0.75, 0.25, 0.25})
     end
     combineMemoryFromBagsWithin()
+    groupNameInput:setGroupNameToInputField()
     self.clearButtons()
+    self.clearInputs()
     createMemoryActionButtons()
     local count = 0
     for guid in pairs(memoryList) do
@@ -365,6 +601,7 @@ function buttonClick_add()
     broadcastToAll("Adding internal bags and selections to existing memory", {0.25, 0.75, 0.25})
     combineMemoryFromBagsWithin()
     self.clearButtons()
+    self.clearInputs()
     createMemoryActionButtons()
     local count = 0
     for guid in pairs(memoryList) do
@@ -379,6 +616,7 @@ end
 function buttonClick_remove()
     broadcastToAll("Removing Selected Entries From Memory", {1.0, 0.25, 0.25})
     self.clearButtons()
+    self.clearInputs()
     createMemoryActionButtons()
     local count = 0
     for guid in pairs(memoryList) do
@@ -395,6 +633,7 @@ end
 function buttonClick_setNew()
     broadcastToAll("Setting new position relative to items in memory", {0.75, 0.75, 1})
     self.clearButtons()
+    self.clearInputs()
     createMemoryActionButtons()
     local count = 0
     for _, obj in ipairs(getAllObjects()) do
@@ -416,7 +655,9 @@ end
 function buttonClick_reset()
     fresh = true
     memoryList = {}
+    memoryGroupName:set(nil)
     self.clearButtons()
+    self.clearInputs()
     createSetupButton()
     removeAllHighlights()
     broadcastToAll("Tool Reset", {1,1,1})
@@ -453,6 +694,15 @@ end
 
 --Sends objects from bag/table to their saved position/rotation
 function buttonClick_place()
+    if anyOtherBagsInMyGroupArePlaced() then
+        recallOtherBagsInMyGroup()
+        Wait.frames(_placeObjects, CONFIG.MEMORY_GROUP.FRAME_DELAY_BEFORE_PLACING_OBJECTS)
+    else
+        _placeObjects()
+    end
+end
+
+function _placeObjects()
     local bagObjList = self.getObjects()
     for guid, entry in pairs(memoryList) do
         local obj = getObjectFromGUID(guid)
@@ -549,4 +799,26 @@ end
 function round(num, dec)
     local mult = 10^(dec or 0)
     return math.floor(num * mult + 0.5) / mult
+end
+
+
+--[[
+This object provides access to a variable stored on the "Global script".
+The variable holds the GUIDs for every Utility Memory Bag in the scene.
+
+Example:
+{'805ebd', '35cc21', 'fc8886', 'f50264', '5f5f63'}
+--]]
+AllMemoryBagsInScene = {
+    NAME_OF_GLOBAL_VARIABLE = "_UtilityMemoryBag_AllMemoryBagsInScene"
+}
+
+function AllMemoryBagsInScene:add(guid)
+    local guids = Global.getTable(self.NAME_OF_GLOBAL_VARIABLE) or {}
+    table.insert(guids, guid)
+    Global.setTable(self.NAME_OF_GLOBAL_VARIABLE, guids)
+end
+
+function AllMemoryBagsInScene:getGuidList()
+    return Global.getTable(self.NAME_OF_GLOBAL_VARIABLE) or {}
 end
