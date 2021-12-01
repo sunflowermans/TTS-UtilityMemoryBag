@@ -18,9 +18,12 @@ CONFIG = {
 --[[ Memory Bag Groups ]]-------------------------------------------------------
 --[[
 Utility Memory Bags may be added to a named group, called a "memory group".
+
 You can add a bag to a group through the bag's UI: "Setup" > "Group Name" (to the left of the bag).
+
 Only one bag from a group may have it's contents placed on the table at a time.
 When "Place" is clicked on a bag, the other bags in it's memory group are recalled.
+
 By default a memory bag is not in any group. It's memory group is "nil".
 --]]
 
@@ -85,6 +88,7 @@ end
 --[[
 This object provides access to a variable stored on the "Global script".
 The variable holds the names & guids of all memory bag groups.
+
 The global variable is a table and holds data like this:
 {
     'My First Group Name' = {
@@ -831,6 +835,7 @@ end
 --[[
 This object provides access to a variable stored on the "Global script".
 The variable holds the GUIDs for every Utility Memory Bag in the scene.
+
 Example:
 {'805ebd', '35cc21', 'fc8886', 'f50264', '5f5f63'}
 --]]
