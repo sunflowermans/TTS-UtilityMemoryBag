@@ -18,12 +18,9 @@ CONFIG = {
 --[[ Memory Bag Groups ]]-------------------------------------------------------
 --[[
 Utility Memory Bags may be added to a named group, called a "memory group".
-
 You can add a bag to a group through the bag's UI: "Setup" > "Group Name" (to the left of the bag).
-
 Only one bag from a group may have it's contents placed on the table at a time.
 When "Place" is clicked on a bag, the other bags in it's memory group are recalled.
-
 By default a memory bag is not in any group. It's memory group is "nil".
 --]]
 
@@ -88,7 +85,6 @@ end
 --[[
 This object provides access to a variable stored on the "Global script".
 The variable holds the names & guids of all memory bag groups.
-
 The global variable is a table and holds data like this:
 {
     'My First Group Name' = {
@@ -703,12 +699,25 @@ function buttonClick_place()
 end
 
 function _placeObjects()
+    -- If Bag.Order=Random, position is shuffled.
+    local poslist = {}
+    if self.getData().Bag.Order == 2 then
+        for guid, entry in pairs(memoryList) do
+            table.insert(poslist, entry.pos)
+        end
+        tableShuffle(poslist)
+    end
+
     local bagObjList = self.getObjects()
     for guid, entry in pairs(memoryList) do
         local obj = getObjectFromGUID(guid)
         --If obj is out on the table, move it to the saved pos/rot
         if obj ~= nil then
-            obj.setPositionSmooth(entry.pos)
+            if self.getData().Bag.Order == 2 then
+                obj.setPositionSmooth(table.remove(poslist))
+            else
+                obj.setPositionSmooth(entry.pos)
+            end
             obj.setRotationSmooth(entry.rot)
             obj.setLock(entry.lock)
             obj.setColorTint(entry.tint)
@@ -716,8 +725,12 @@ function _placeObjects()
             --If obj is inside of the bag
             for _, bagObj in ipairs(bagObjList) do
                 if bagObj.guid == guid then
+                    local pos = entry.pos
+                    if self.getData().Bag.Order == 2 then
+                        pos = table.remove(poslist)
+                    end
                     local item = self.takeObject({
-                        guid=guid, position=entry.pos, rotation=entry.rot, smooth=false
+                        guid=guid, position=pos, rotation=entry.rot, smooth=false
                     })
                     item.setLock(entry.lock)
                     item.setColorTint(entry.tint)
@@ -726,7 +739,20 @@ function _placeObjects()
             end
         end
     end
-    broadcastToAll("Objects Placed", {1,1,1})
+    if self.getData().Bag.Order == 2 then
+        broadcastToAll("Objects Random Placed", {1,1,1})
+    else
+        broadcastToAll("Objects Placed", {1,1,1})
+    end
+end
+
+-- Fisher-Yates shuffle
+function tableShuffle(list)
+    math.randomseed(os.time())
+    for i = #list, 2, -1 do
+        local j = math.random(i)
+        list[i], list[j] = list[j], list[i]
+    end
 end
 
 --Recalls objects to bag from table
@@ -805,7 +831,6 @@ end
 --[[
 This object provides access to a variable stored on the "Global script".
 The variable holds the GUIDs for every Utility Memory Bag in the scene.
-
 Example:
 {'805ebd', '35cc21', 'fc8886', 'f50264', '5f5f63'}
 --]]
