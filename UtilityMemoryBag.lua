@@ -703,12 +703,25 @@ function buttonClick_place()
 end
 
 function _placeObjects()
+    -- If Bag.Order=Random, position is shuffled.
+    local poslist = {}
+    if self.getData().Bag.Order == 2 then
+        for guid, entry in pairs(memoryList) do
+            table.insert(poslist, entry.pos)
+        end
+        tableShuffle(poslist)
+    end
+
     local bagObjList = self.getObjects()
     for guid, entry in pairs(memoryList) do
         local obj = getObjectFromGUID(guid)
         --If obj is out on the table, move it to the saved pos/rot
         if obj ~= nil then
-            obj.setPositionSmooth(entry.pos)
+            if self.getData().Bag.Order == 2 then
+                obj.setPositionSmooth(table.remove(poslist))
+            else
+                obj.setPositionSmooth(entry.pos)
+            end
             obj.setRotationSmooth(entry.rot)
             obj.setLock(entry.lock)
             obj.setColorTint(entry.tint)
@@ -716,8 +729,12 @@ function _placeObjects()
             --If obj is inside of the bag
             for _, bagObj in ipairs(bagObjList) do
                 if bagObj.guid == guid then
+                    local pos = entry.pos
+                    if self.getData().Bag.Order == 2 then
+                        pos = table.remove(poslist)
+                    end
                     local item = self.takeObject({
-                        guid=guid, position=entry.pos, rotation=entry.rot, smooth=false
+                        guid=guid, position=pos, rotation=entry.rot, smooth=false
                     })
                     item.setLock(entry.lock)
                     item.setColorTint(entry.tint)
@@ -726,7 +743,20 @@ function _placeObjects()
             end
         end
     end
-    broadcastToAll("Objects Placed", {1,1,1})
+    if self.getData().Bag.Order == 2 then
+        broadcastToAll("Objects Random Placed", {1,1,1})
+    else
+        broadcastToAll("Objects Placed", {1,1,1})
+    end
+end
+
+-- Fisher-Yates shuffle
+function tableShuffle(list)
+    math.randomseed(os.time())
+    for i = #list, 2, -1 do
+        local j = math.random(i)
+        list[i], list[j] = list[j], list[i]
+    end
 end
 
 --Recalls objects to bag from table
