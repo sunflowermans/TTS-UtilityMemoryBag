@@ -364,7 +364,10 @@ function createButtonsOnAllObjects(move)
     for _, obj in ipairs(objsToHaveButtons) do
         if obj ~= self then
             --On a normal bag, the button positions aren't the same size as the bag.
-            globalScaleFactor = 1.25 * 1/self.getScale().x
+            --However, on custom models turned into bags, they are.
+            local adjusting_factor = 1.25
+            if self.getData().Name ~= 'Bag' then adjusting_factor = 1 end
+            globalScaleFactor = adjusting_factor * 1/self.getScale().x
             --Super sweet math to set button positions
             local selfPos = self.getPosition()
             local objPos = obj.getPosition()
